@@ -9,10 +9,15 @@ import type {
 } from "~/types/models";
 import type { SupportedLang } from "~/composables/useI18n";
 import type { ColorScheme, FontSize } from "~/composables/usePreferences";
+import type { ShortcutDef } from "~/composables/useKeyboardShortcuts";
 
 const api = useMartaApi();
 const { t, currentLang, languageLabels, languageKeys, setLanguage } = useAppI18n();
 const { prefs, update: updatePrefs, init: initPrefs } = usePreferences();
+const { favorites, toggleRoute, toggleStation, isRouteBookmarked, isStationBookmarked, totalCount: favCount } = useFavorites();
+const { exportArrivalsJSON, exportAlertsJSON, exportArrivalsCSV, exportAlertsCSV } = useExport();
+const { markAsRead, isRead: isAlertRead, getUnreadCount } = useAlertTracking();
+const urlState = useUrlState();
 
 const isMockMode = import.meta.server ? false : api.isMockModeEnabled();
 
@@ -36,18 +41,44 @@ const accessibilityNeeded = ref(true);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
 const settingsOpen = ref(false);
+const shortcutsHelpOpen = ref(false);
+const linkCopied = ref(false);
 
 let realtimeHandle: { close: () => void } | null = null;
+
+const unreadAlertCount = computed(() => getUnreadCount(alerts.value.map((a) => a.id)));
 
 const accessibilityIssueCount = computed(() =>
   equipment.value.filter((item) => item.status !== "operational").length,
 );
+
+// ── Keyboard shortcuts ──
+
+const shortcutDefs = computed<ShortcutDef[]>(() => [
+  { key: "r", description: "Refresh all data", handler: () => refreshAll() },
+  { key: "s", description: "Toggle settings panel", handler: () => toggleSettings() },
+  { key: "?", description: "Show keyboard shortcuts", handler: () => { shortcutsHelpOpen.value = true; } },
+  { key: "Escape", description: "Close panels / dialogs", handler: () => { settingsOpen.value = false; shortcutsHelpOpen.value = false; }, allowInInput: true },
+]);
+
+useKeyboardShortcuts(shortcutDefs);
 
 // ── Lifecycle ──
 
 onMounted(() => {
   initPrefs();
   setLanguage(prefs.language as SupportedLang);
+
+  // Restore from URL if present
+  const urlParams = urlState.read();
+  if (urlParams.stop) stopId.value = urlParams.stop;
+  if (urlParams.route) routeId.value = urlParams.route;
+  if (urlParams.station) stationId.value = urlParams.station;
+  if (urlParams.lang) {
+    setLanguage(urlParams.lang as SupportedLang);
+    updatePrefs({ language: urlParams.lang });
+  }
+
   refreshAll();
   connectRealtime();
 });
@@ -194,6 +225,38 @@ function connectRealtime() {
   });
 }
 
+// ── URL state sync ──
+
+function syncUrl() {
+  urlState.write({
+    stop: stopId.value !== "MID" ? stopId.value : undefined,
+    route: routeId.value !== "RED" ? routeId.value : undefined,
+    station: stationId.value !== "MID" ? stationId.value : undefined,
+    lang: prefs.language !== "en" ? prefs.language : undefined,
+  });
+}
+
+watch([stopId, routeId, stationId], syncUrl);
+
+// ── Share link ──
+
+function shareLink() {
+  syncUrl();
+  urlState.copyLink();
+  linkCopied.value = true;
+  setTimeout(() => { linkCopied.value = false; }, 2000);
+}
+
+// ── Quick-action wrappers ──
+
+function onQuickExportJson() {
+  exportArrivalsJSON(arrivals.value);
+}
+
+function onQuickExportCsv() {
+  exportArrivalsCSV(arrivals.value);
+}
+
 function toDateTimeLocal(value: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   const year = value.getFullYear();
@@ -218,6 +281,13 @@ function toDateTimeLocal(value: Date): string {
       </div>
     </div>
     <div class="header-actions">
+      <button
+        class="btn icon-btn"
+        :aria-label="t('shortcuts.open')"
+        @click="shortcutsHelpOpen = true"
+      >
+        ?
+      </button>
       <button
         class="btn icon-btn"
         :aria-expanded="settingsOpen"
@@ -351,6 +421,20 @@ function toDateTimeLocal(value: Date): string {
   <main id="main-content" class="app-grid">
     <p v-if="error" class="error-banner">{{ error }}</p>
 
+    <!-- Loading skeleton -->
+    <template v-if="isLoading && arrivals.length === 0">
+      <section class="card hero-card">
+        <SkeletonLoader variant="stat" :count="3" />
+      </section>
+      <section class="card">
+        <SkeletonLoader variant="row" :count="3" />
+      </section>
+      <section class="card">
+        <SkeletonLoader variant="row" :count="2" />
+      </section>
+    </template>
+
+    <template v-else>
     <!-- Overview -->
     <section class="card hero-card" aria-labelledby="overview-title">
       <div class="card-heading-row">
@@ -365,7 +449,10 @@ function toDateTimeLocal(value: Date): string {
         </article>
         <article role="listitem">
           <span>{{ t('overview.alerts') }}</span>
-          <strong>{{ alerts.length }}</strong>
+          <strong>
+            {{ alerts.length }}
+            <span v-if="unreadAlertCount > 0" class="unread-badge">{{ unreadAlertCount }} {{ t('alerts.unread') }}</span>
+          </strong>
         </article>
         <article role="listitem">
           <span>{{ t('overview.accessibility') }}</span>
@@ -377,13 +464,25 @@ function toDateTimeLocal(value: Date): string {
         <span v-for="route in dashboard.favoriteRoutes" :key="route" class="chip">Route {{ route }}</span>
         <span v-for="stop in dashboard.favoriteStops" :key="stop" class="chip muted-chip">Stop {{ stop }}</span>
       </div>
+
+      <!-- Favorites summary -->
+      <div v-if="favCount > 0" class="chip-row" :aria-label="t('fav.title')">
+        <span v-for="route in favorites.routes" :key="'fav-r-' + route" class="chip fav-chip">&#9733; Route {{ route }}</span>
+        <span v-for="station in favorites.stations" :key="'fav-s-' + station" class="chip fav-chip">&#9733; {{ station }}</span>
+      </div>
     </section>
 
     <!-- Arrivals -->
     <section class="card" aria-labelledby="arrivals-title">
       <div class="card-heading-row">
-        <h2 id="arrivals-title">{{ t('arrivals.title') }}</h2>
-        <p class="muted">{{ t('arrivals.subtitle') }}</p>
+        <div>
+          <h2 id="arrivals-title">{{ t('arrivals.title') }}</h2>
+          <p class="muted">{{ t('arrivals.subtitle') }}</p>
+        </div>
+        <div class="card-actions" v-if="arrivals.length > 0">
+          <button class="btn-small" :aria-label="t('export.json')" @click="exportArrivalsJSON(arrivals)">&#x2913; JSON</button>
+          <button class="btn-small" :aria-label="t('export.csv')" @click="exportArrivalsCSV(arrivals)">&#x2913; CSV</button>
+        </div>
       </div>
 
       <div class="inline-controls">
@@ -403,6 +502,13 @@ function toDateTimeLocal(value: Date): string {
           <div class="row-meta">
             <span class="pill">{{ item.minutesAway }} {{ t('arrivals.min') }}</span>
             <span class="muted">{{ formatTime(item.predictedAt) }}</span>
+            <button
+              class="fav-btn"
+              :aria-label="isRouteBookmarked(item.routeId) ? t('fav.remove') : t('fav.add')"
+              @click="toggleRoute(item.routeId)"
+            >
+              {{ isRouteBookmarked(item.routeId) ? '&#9733;' : '&#9734;' }}
+            </button>
           </div>
         </li>
         <li v-if="arrivals.length === 0" class="empty-state">{{ t('arrivals.empty') }}</li>
@@ -412,8 +518,14 @@ function toDateTimeLocal(value: Date): string {
     <!-- Alerts -->
     <section class="card" aria-labelledby="alerts-title">
       <div class="card-heading-row">
-        <h2 id="alerts-title">{{ t('alerts.title') }}</h2>
-        <p class="muted">{{ t('alerts.subtitle') }}</p>
+        <div>
+          <h2 id="alerts-title">{{ t('alerts.title') }}</h2>
+          <p class="muted">{{ t('alerts.subtitle') }}</p>
+        </div>
+        <div class="card-actions" v-if="alerts.length > 0">
+          <button class="btn-small" :aria-label="t('export.json')" @click="exportAlertsJSON(alerts)">&#x2913; JSON</button>
+          <button class="btn-small" :aria-label="t('export.csv')" @click="exportAlertsCSV(alerts)">&#x2913; CSV</button>
+        </div>
       </div>
 
       <div class="inline-controls">
@@ -425,9 +537,16 @@ function toDateTimeLocal(value: Date): string {
       </div>
 
       <ul class="list modern-list">
-        <li v-for="alert in alerts" :key="alert.id" class="row-item">
+        <li
+          v-for="alert in alerts"
+          :key="alert.id"
+          class="row-item"
+          :class="{ 'row-item--unread': !isAlertRead(alert.id) }"
+          @click="markAsRead(alert.id)"
+        >
           <div>
             <strong>{{ alert.title }}</strong>
+            <span v-if="!isAlertRead(alert.id)" class="new-badge">{{ t('alerts.new') }}</span>
             <p>{{ alert.description }}</p>
           </div>
           <div class="row-meta">
@@ -463,6 +582,13 @@ function toDateTimeLocal(value: Date): string {
           <div class="row-meta">
             <span class="pill">{{ equipmentStatusLabel(item.status) }}</span>
             <span class="muted">{{ formatTime(item.updatedAt) }}</span>
+            <button
+              class="fav-btn"
+              :aria-label="isStationBookmarked(item.stationId) ? t('fav.remove') : t('fav.add')"
+              @click="toggleStation(item.stationId)"
+            >
+              {{ isStationBookmarked(item.stationId) ? '&#9733;' : '&#9734;' }}
+            </button>
           </div>
         </li>
         <li v-if="equipment.length === 0" class="empty-state">{{ t('access.empty') }}</li>
@@ -540,7 +666,28 @@ function toDateTimeLocal(value: Date): string {
       </article>
       <p v-else class="muted">{{ t('leave.empty') }}</p>
     </section>
+    </template>
   </main>
+
+  <!-- Quick Actions FAB -->
+  <QuickActions
+    @refresh="refreshAll()"
+    @export-json="onQuickExportJson()"
+    @export-csv="onQuickExportCsv()"
+    @share="shareLink()"
+  />
+
+  <!-- Share toast -->
+  <Transition name="toast">
+    <div v-if="linkCopied" class="toast" role="status">{{ t('share.copied') }}</div>
+  </Transition>
+
+  <!-- Keyboard shortcuts help -->
+  <KeyboardShortcutsHelp
+    :shortcuts="shortcutDefs"
+    :open="shortcutsHelpOpen"
+    @close="shortcutsHelpOpen = false"
+  />
 </template>
 
 <style lang="scss" scoped>
@@ -1002,5 +1149,99 @@ input {
   font: inherit;
   font-size: 0.92rem;
   cursor: pointer;
+}
+
+/* ── New feature styles ── */
+
+.card-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.btn-small {
+  padding: 0.32rem 0.55rem;
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in srgb, CanvasText 16%, transparent);
+  background: color-mix(in srgb, CanvasText 6%, Canvas 94%);
+  color: CanvasText;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-small:hover {
+  background: color-mix(in srgb, CanvasText 14%, Canvas 86%);
+}
+
+.fav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.3rem;
+  padding: 0;
+  line-height: 1;
+  color: CanvasText;
+}
+
+.fav-btn:hover {
+  transform: scale(1.15);
+}
+
+.fav-chip {
+  background: color-mix(in srgb, CanvasText 8%, Canvas 92%);
+  border-color: color-mix(in srgb, CanvasText 25%, transparent);
+}
+
+.unread-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, CanvasText 18%, Canvas 82%);
+  vertical-align: middle;
+  margin-left: 0.35rem;
+}
+
+.new-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.08rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, CanvasText 30%, transparent);
+  background: color-mix(in srgb, CanvasText 14%, Canvas 86%);
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.row-item--unread {
+  border-left: 3px solid color-mix(in srgb, CanvasText 45%, transparent);
+}
+
+.toast {
+  position: fixed;
+  bottom: 5.5rem;
+  right: 1.5rem;
+  z-index: 95;
+  padding: 0.55rem 1rem;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, CanvasText 90%, Canvas 10%);
+  color: Canvas;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 2px 12px color-mix(in srgb, CanvasText 20%, transparent);
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 </style>
