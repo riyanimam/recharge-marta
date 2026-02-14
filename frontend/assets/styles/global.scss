@@ -55,3 +55,16 @@ html.high-contrast {
         color: color-mix(in srgb, CanvasText 88%, transparent);
     }
 }
+
+/* ── Reduced motion (set via .reduced-motion class on <html>) ── */
+
+html.reduced-motion {
+
+    *,
+    *::before,
+    *::after {
+        transition: none !important;
+        animation: none !important;
+        scroll-behavior: auto !important;
+    }
+}
