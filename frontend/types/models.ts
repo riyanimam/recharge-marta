@@ -15,16 +15,16 @@ export type Alert = {
   description: string;
   routeId?: string;
   stationId?: string;
-  severity: 'low' | 'medium' | 'high';
+  severity: "low" | "medium" | "high";
   updatedAt: string;
 };
 
 export type EquipmentStatus = {
   stationId: string;
   stationName: string;
-  type: 'elevator' | 'escalator';
+  type: "elevator" | "escalator";
   name: string;
-  status: 'operational' | 'out_of_service';
+  status: "operational" | "out_of_service";
   updatedAt: string;
 };
 
@@ -35,9 +35,9 @@ export type TripOption = {
   arriveAt: string;
   durationMinutes: number;
   transfers: number;
-  transferRisk: 'low' | 'medium' | 'high';
+  transferRisk: "low" | "medium" | "high";
   accessibilitySafe: boolean;
-  crowdingForecast: 'low' | 'moderate' | 'high';
+  crowdingForecast: "low" | "moderate" | "high";
 };
 
 export type LeaveNowResponse = {
