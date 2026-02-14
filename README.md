@@ -1,6 +1,6 @@
 # Recharge MARTA
 
-Responsive and accessible Angular commuter web app + Go backend for realtime transit workflows:
+Responsive and accessible Nuxt 3 / Vue 3 commuter web app + Go backend for realtime transit workflows:
 
 - Smart arrivals
 - Personalized alerts
@@ -14,13 +14,14 @@ Responsive and accessible Angular commuter web app + Go backend for realtime tra
 ```
 recharge-marta/
 	backend/   # Go API server
-	frontend/  # Angular web app
+	frontend/  # Nuxt 3 / Vue 3 web app
 ```
 
 ## Requirements
 
 - Go 1.23+
 - Node.js 20+
+- pnpm 10+
 
 ## Run Backend
 
@@ -53,15 +54,22 @@ If clicking GTFS-RT links downloads a `.pb` file, that is expected: GTFS-RT uses
 
 When no live source is configured, backend uses seeded demo data.
 
-## Run Frontend (Angular)
+## Run Frontend (Nuxt 3)
 
 ```bash
 cd frontend
-npm install
-npm start
+pnpm install
+pnpm dev
 ```
 
-Angular frontend runs on `http://localhost:4200` by default and calls the backend at `http://localhost:8080`.
+Nuxt frontend runs on `http://localhost:3000` by default and calls the backend at `http://localhost:8080`.
+
+## Run Tests
+
+```bash
+cd frontend
+pnpm test
+```
 
 ## Useful API Endpoints
 
@@ -79,9 +87,14 @@ Angular frontend runs on `http://localhost:4200` by default and calls the backen
 
 - Semantic sections and headings
 - Keyboard focus support and skip link
-- High-contrast capable styling with system color support
+- High-contrast mode with stronger borders and bolder text
+- Reduced motion mode (disables all transitions and animations)
+- Adjustable text size (default / large / extra-large)
+- Light, dark, and system color schemes
+- Multi-language support (English, Spanish, Korean, Chinese, French)
 - Mobile-first responsive grid
 - Clear error states and status summaries
+- User preferences persisted in localStorage
 
 ## Next Recommended Enhancements
 
