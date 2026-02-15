@@ -265,7 +265,7 @@ function shareLink() {
   setTimeout(() => { linkCopied.value = false; }, 2000);
 }
 
-function retryFromError() {
+function handleRetry() {
   refreshAll();
 }
 
@@ -421,7 +421,7 @@ function toDateTimeLocal(value: Date): string {
         <div v-if="error" class="alert alert--danger" role="alert">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="7.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 5.5v4M9 12.5h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           <span class="alert-text">{{ error }}</span>
-          <button class="btn btn--secondary btn--sm" @click="retryFromError()">{{ t('app.refresh') }}</button>
+          <button class="btn btn--secondary btn--sm" @click="handleRetry()">{{ t('app.refresh') }}</button>
         </div>
       </Transition>
 

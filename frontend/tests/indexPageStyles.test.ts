@@ -29,7 +29,8 @@ describe("index page style accessibility rules", () => {
 
   it("adds an actionable retry button in error banner", () => {
     expect(pageContent).toContain('class="alert-text"');
-    expect(pageContent).toContain('@click="retryFromError()"');
+    expect(pageContent).toContain('@click="handleRetry()"');
+    expect(pageContent).toContain("{{ t('app.refresh') }}");
   });
 
   it("keeps skip-link before main content for keyboard users", () => {

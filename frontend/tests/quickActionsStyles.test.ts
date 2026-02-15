@@ -7,14 +7,19 @@ const componentContent = readFileSync(componentPath, "utf-8");
 
 describe("QuickActions floating layout and accessibility", () => {
   it("anchors the quick actions container to viewport safe-area edges", () => {
-    expect(componentContent).toContain("position: sticky;");
-    expect(componentContent).toMatch(/\.fab-container[\s\S]*?bottom:\s*calc\(1rem \+ env\(safe-area-inset-bottom, 0px\)\)/);
-    expect(componentContent).toMatch(
-      /\.fab-container[\s\S]*?margin-right:\s*max\(1rem, env\(safe-area-inset-right, 0px\)\)/,
-    );
-    expect(componentContent).toMatch(
-      /@media \(max-width: 640px\)[\s\S]*?\.fab-container[\s\S]*?position:\s*fixed[\s\S]*?right:\s*max\(0\.75rem, env\(safe-area-inset-right, 0px\)\)/,
-    );
+    const fabStart = componentContent.indexOf(".fab-container {");
+    const mediaStart = componentContent.indexOf("@media (max-width: 640px)");
+    const desktopFabBlock =
+      fabStart >= 0 && mediaStart > fabStart ? componentContent.slice(fabStart, mediaStart) : "";
+
+    expect(desktopFabBlock).toContain("position: sticky;");
+    expect(desktopFabBlock).toContain("bottom: calc(1rem + env(safe-area-inset-bottom, 0px));");
+    expect(desktopFabBlock).toContain("margin-right: max(1rem, env(safe-area-inset-right, 0px));");
+
+    const mobileBlock = mediaStart >= 0 ? componentContent.slice(mediaStart) : "";
+    expect(mobileBlock).toContain(".fab-container {");
+    expect(mobileBlock).toContain("position: fixed;");
+    expect(mobileBlock).toContain("right: max(0.75rem, env(safe-area-inset-right, 0px));");
   });
 
   it("adds focus-visible styling for keyboard users", () => {
