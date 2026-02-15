@@ -69,20 +69,20 @@ function action(fn: () => void) {
   width: 3.2rem;
   height: 3.2rem;
   border-radius: 50%;
-  border: 2px solid color-mix(in srgb, CanvasText 22%, transparent);
-  background: color-mix(in srgb, CanvasText 14%, Canvas 86%);
-  color: CanvasText;
+  border: 2px solid var(--rm-border-strong);
+  background: var(--rm-primary);
+  color: var(--rm-primary-text);
   font-size: 1.35rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 12px color-mix(in srgb, CanvasText 15%, transparent);
-  transition: transform 0.15s ease, background 0.15s ease;
+  box-shadow: var(--rm-shadow-md);
+  transition: transform var(--rm-transition-fast), background var(--rm-transition-fast);
 }
 
 .fab-trigger:hover {
-  background: color-mix(in srgb, CanvasText 22%, Canvas 78%);
+  background: var(--rm-primary-hover);
 }
 
 .fab-trigger.open {
@@ -99,18 +99,19 @@ function action(fn: () => void) {
 .fab-action {
   white-space: nowrap;
   padding: 0.5rem 0.85rem;
-  border-radius: 0.6rem;
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-  background: Canvas;
-  color: CanvasText;
+  border-radius: var(--rm-radius-md);
+  border: 1px solid var(--rm-border-default);
+  background: var(--rm-bg-surface);
+  color: var(--rm-text-primary);
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 1px 6px color-mix(in srgb, CanvasText 10%, transparent);
-  transition: transform 0.1s ease;
+  box-shadow: var(--rm-shadow-sm);
+  transition: transform var(--rm-transition-fast), background var(--rm-transition-fast);
 }
 
 .fab-action:hover {
+  background: var(--rm-bg-inset);
   transform: scale(1.04);
 }
 

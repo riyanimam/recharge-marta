@@ -40,7 +40,7 @@ defineProps<{
 <style scoped>
 .skeleton-container {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--rm-space-md);
 }
 
 .skeleton--stat {
@@ -58,16 +58,16 @@ defineProps<{
 .skeleton-item {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem;
-  border-radius: 0.6rem;
-  border: 1px solid color-mix(in srgb, CanvasText 10%, transparent);
-  background: color-mix(in srgb, CanvasText 4%, Canvas 96%);
+  gap: var(--rm-space-sm);
+  padding: var(--rm-space-lg);
+  border-radius: var(--rm-radius-md);
+  border: 1px solid var(--rm-border-subtle);
+  background: var(--rm-bg-inset);
 }
 
 .skel-line {
   border-radius: 4px;
-  background: color-mix(in srgb, CanvasText 12%, transparent);
+  background: var(--rm-border-default);
   animation: shimmer 1.5s ease-in-out infinite alternate;
 }
 

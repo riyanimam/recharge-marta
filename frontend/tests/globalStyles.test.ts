@@ -94,8 +94,13 @@ describe("global.scss: high-contrast selectors", () => {
   });
 
   it("high-contrast improves .muted readability", () => {
-    // Verifies .muted color is closer to full CanvasText (88%) in high-contrast
-    const match = cssContent.match(/html\.high-contrast[\s\S]*?\.muted\s*\{[^}]*88%/);
+    // Verifies .muted is promoted to primary text colour in high-contrast
+    const match = cssContent.match(/html\.high-contrast[\s\S]*?\.muted\s*\{[^}]*color:\s*var\(--rm-text-primary\)/);
+    expect(match).not.toBeNull();
+  });
+
+  it("high-contrast enforces thicker borders on core surfaces", () => {
+    const match = cssContent.match(/html\.high-contrast[\s\S]*?\.card,[\s\S]*?border-width:\s*2px\s*!important/);
     expect(match).not.toBeNull();
   });
 });
