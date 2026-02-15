@@ -7,9 +7,9 @@ const pageContent = readFileSync(pagePath, "utf-8");
 
 describe("index page style accessibility rules", () => {
   it("adds visible keyboard focus styles for segmented controls", () => {
-    expect(pageContent).toMatch(
-      /\.seg-btn[\s\S]*?&:focus-visible\s*\{\s*outline:\s*2px solid var\(--rm-primary\)/,
-    );
+    const segBtnBlock = pageContent.match(/\.seg-btn\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+    expect(segBtnBlock).toContain("&:focus-visible");
+    expect(segBtnBlock).toMatch(/outline:\s*2px\s+solid\s+var\(--rm-primary\)/);
   });
 
   it("ensures icon buttons meet minimum touch target size", () => {
@@ -18,7 +18,12 @@ describe("index page style accessibility rules", () => {
   });
 
   it("adds a tablet breakpoint for data row metadata alignment", () => {
-    expect(pageContent).toContain("@media (max-width: 860px) and (min-width: 641px)");
-    expect(pageContent).toContain(".data-row-end { align-items: flex-start; }");
+    const tabletMedia = "@media (max-width: 860px) and (min-width: 641px)";
+    const tabletStart = pageContent.indexOf(tabletMedia);
+    const nextMediaStart = pageContent.indexOf("@media (min-width: 1200px)");
+    const tabletBlock = tabletStart >= 0 ? pageContent.slice(tabletStart, nextMediaStart) : "";
+
+    expect(tabletBlock).toContain(tabletMedia);
+    expect(tabletBlock).toMatch(/\.data-row-end\s*\{[^}]*align-items:\s*flex-start/);
   });
 });
