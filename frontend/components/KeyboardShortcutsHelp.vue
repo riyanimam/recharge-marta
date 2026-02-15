@@ -52,7 +52,7 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, CanvasText 40%, transparent);
+  background: var(--rm-bg-overlay);
   backdrop-filter: blur(4px);
 }
 
@@ -60,24 +60,25 @@ const emit = defineEmits<{
   width: min(420px, 92vw);
   max-height: 80vh;
   overflow-y: auto;
-  background: Canvas;
-  color: CanvasText;
-  border-radius: 0.75rem;
-  border: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
-  box-shadow: 0 8px 32px color-mix(in srgb, CanvasText 18%, transparent);
-  padding: 1.25rem;
+  background: var(--rm-bg-surface);
+  color: var(--rm-text-primary);
+  border-radius: var(--rm-radius-lg);
+  border: 1px solid var(--rm-border-default);
+  box-shadow: var(--rm-shadow-lg);
+  padding: var(--rm-space-xl);
 }
 
 .shortcut-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: var(--rm-space-lg);
 }
 
 .shortcut-header h2 {
   margin: 0;
   font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .shortcut-table {
@@ -89,14 +90,16 @@ const emit = defineEmits<{
   text-align: left;
   font-weight: 600;
   padding: 0.45rem 0.6rem;
-  border-bottom: 2px solid color-mix(in srgb, CanvasText 16%, transparent);
-  font-size: 0.85rem;
-  color: color-mix(in srgb, CanvasText 70%, transparent);
+  border-bottom: 2px solid var(--rm-border-strong);
+  font-size: 0.82rem;
+  color: var(--rm-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .shortcut-table td {
   padding: 0.45rem 0.6rem;
-  border-bottom: 1px solid color-mix(in srgb, CanvasText 8%, transparent);
+  border-bottom: 1px solid var(--rm-border-subtle);
   font-size: 0.9rem;
 }
 
@@ -104,9 +107,9 @@ kbd {
   display: inline-block;
   min-width: 1.6rem;
   padding: 0.15rem 0.45rem;
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
-  background: color-mix(in srgb, CanvasText 6%, Canvas 94%);
+  border-radius: var(--rm-radius-sm);
+  border: 1px solid var(--rm-border-strong);
+  background: var(--rm-bg-inset);
   font-family: inherit;
   font-size: 0.85rem;
   font-weight: 600;
@@ -116,7 +119,7 @@ kbd {
 /* transition */
 .modal-fade-enter-active,
 .modal-fade-leave-active {
-  transition: opacity 0.15s ease;
+  transition: opacity var(--rm-transition-fast);
 }
 
 .modal-fade-enter-from,

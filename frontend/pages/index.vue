@@ -217,6 +217,24 @@ function tripRiskLabel(risk: TripOption["transferRisk"]): string {
   return map[risk] ?? risk;
 }
 
+function severityClass(severity: Alert["severity"]): string {
+  const map: Record<string, string> = {
+    high: "pill--danger",
+    medium: "pill--warning",
+    low: "pill--info",
+  };
+  return map[severity] ?? "";
+}
+
+function riskClass(risk: TripOption["transferRisk"]): string {
+  const map: Record<string, string> = {
+    high: "pill--danger",
+    medium: "pill--warning",
+    low: "pill--success",
+  };
+  return map[risk] ?? "";
+}
+
 function connectRealtime() {
   realtimeHandle?.close();
   realtimeHandle = api.openRealtime((data) => {
@@ -271,402 +289,396 @@ function toDateTimeLocal(value: Date): string {
 <template>
   <a class="skip-link" href="#main-content">{{ t('nav.skip') }}</a>
 
-  <header class="app-header">
-    <div class="header-copy">
-      <h1>Recharge MARTA</h1>
-      <p>{{ t('app.subtitle') }}</p>
-      <div class="header-badges">
-        <p v-if="isMockMode" class="mock-badge">{{ t('app.mock') }}</p>
-        <p class="live-badge">{{ t('app.live') }}</p>
+  <!-- ═══ Top navigation bar ═══ -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="7" fill="var(--rm-primary)"/><path d="M7 19.5V8.5a1 1 0 011-1h12a1 1 0 011 1v11a1 1 0 01-1 1H8a1 1 0 01-1-1z" stroke="#fff" stroke-width="1.6"/><path d="M10 12h8M10 15h5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <h1 class="brand-title">Recharge MARTA</h1>
+          <p class="brand-subtitle">{{ t('app.subtitle') }}</p>
+        </div>
       </div>
-    </div>
-    <div class="header-actions">
-      <button
-        class="btn icon-btn"
-        :aria-label="t('shortcuts.open')"
-        @click="shortcutsHelpOpen = true"
-      >
-        ?
-      </button>
-      <button
-        class="btn icon-btn"
-        :aria-expanded="settingsOpen"
-        aria-controls="settings-panel"
-        :aria-label="t('prefs.title')"
-        @click="toggleSettings()"
-      >
-        &#9881;
-      </button>
-      <button
-        class="btn secondary"
-        :disabled="isLoading"
-        :aria-label="t('app.refresh')"
-        @click="refreshAll()"
-      >
-        {{ isLoading ? t('app.refreshing') : t('app.refresh') }}
-      </button>
+
+      <div class="topbar-center">
+        <div class="topbar-badges">
+          <span v-if="isMockMode" class="badge badge--mock">{{ t('app.mock') }}</span>
+          <span class="badge badge--live"><span class="live-dot" aria-hidden="true"></span> {{ t('app.live') }}</span>
+        </div>
+      </div>
+
+      <nav class="topbar-actions" aria-label="Global actions">
+        <button class="topbar-btn" :aria-label="t('shortcuts.open')" @click="shortcutsHelpOpen = true">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="1" y="1" width="16" height="16" rx="4" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 6.5a2.5 2.5 0 014.37 1.66c0 1.67-2.5 1.67-2.5 3.34M9 14h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button
+          class="topbar-btn"
+          :aria-expanded="settingsOpen"
+          aria-controls="settings-panel"
+          :aria-label="t('prefs.title')"
+          @click="toggleSettings()"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.05 3.05l1.41 1.41M13.54 13.54l1.41 1.41M3.05 14.95l1.41-1.41M13.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button
+          class="btn btn--primary"
+          :disabled="isLoading"
+          :aria-label="t('app.refresh')"
+          @click="refreshAll()"
+        >
+          <svg v-if="!isLoading" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8a6 6 0 0110.47-4M14 8a6 6 0 01-10.47 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 1v3h-3M4 15v-3h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg v-else class="spin" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" stroke-dasharray="28 10" stroke-linecap="round"/></svg>
+          {{ isLoading ? t('app.refreshing') : t('app.refresh') }}
+        </button>
+      </nav>
     </div>
   </header>
 
-  <!-- Settings panel -->
-  <aside
-    v-if="settingsOpen"
-    id="settings-panel"
-    class="settings-panel"
-    role="dialog"
-    :aria-label="t('prefs.title')"
-  >
-    <div class="settings-header">
-      <h2>{{ t('prefs.title') }}</h2>
-      <button class="btn icon-btn close-btn" :aria-label="t('prefs.close')" @click="toggleSettings()">
-        &#10005;
-      </button>
-    </div>
-
-    <div class="settings-group">
-      <h3>{{ t('prefs.theme') }}</h3>
-      <div class="toggle-group" role="radiogroup" :aria-label="t('prefs.theme')">
-        <button
-          class="toggle-btn"
-          :class="{ active: prefs.colorScheme === 'system' }"
-          role="radio"
-          :aria-checked="prefs.colorScheme === 'system'"
-          @click="setColorScheme('system')"
-        >
-          {{ t('prefs.themeSystem') }}
-        </button>
-        <button
-          class="toggle-btn"
-          :class="{ active: prefs.colorScheme === 'light' }"
-          role="radio"
-          :aria-checked="prefs.colorScheme === 'light'"
-          @click="setColorScheme('light')"
-        >
-          {{ t('prefs.themeLight') }}
-        </button>
-        <button
-          class="toggle-btn"
-          :class="{ active: prefs.colorScheme === 'dark' }"
-          role="radio"
-          :aria-checked="prefs.colorScheme === 'dark'"
-          @click="setColorScheme('dark')"
-        >
-          {{ t('prefs.themeDark') }}
+  <!-- ═══ Settings drawer ═══ -->
+  <Transition name="drawer">
+    <aside
+      v-if="settingsOpen"
+      id="settings-panel"
+      class="settings-drawer"
+      role="dialog"
+      :aria-label="t('prefs.title')"
+    >
+      <div class="drawer-header">
+        <h2>{{ t('prefs.title') }}</h2>
+        <button class="topbar-btn" :aria-label="t('prefs.close')" @click="toggleSettings()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4.5 4.5l9 9M13.5 4.5l-9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         </button>
       </div>
-    </div>
 
-    <div class="settings-group">
-      <h3>{{ t('prefs.fontSize') }}</h3>
-      <div class="toggle-group" role="radiogroup" :aria-label="t('prefs.fontSize')">
-        <button
-          class="toggle-btn"
-          :class="{ active: prefs.fontSize === 'default' }"
-          role="radio"
-          :aria-checked="prefs.fontSize === 'default'"
-          @click="setFontSize('default')"
-        >
-          {{ t('prefs.fontDefault') }}
-        </button>
-        <button
-          class="toggle-btn"
-          :class="{ active: prefs.fontSize === 'large' }"
-          role="radio"
-          :aria-checked="prefs.fontSize === 'large'"
-          @click="setFontSize('large')"
-        >
-          {{ t('prefs.fontLarge') }}
-        </button>
-        <button
-          class="toggle-btn"
-          :class="{ active: prefs.fontSize === 'x-large' }"
-          role="radio"
-          :aria-checked="prefs.fontSize === 'x-large'"
-          @click="setFontSize('x-large')"
-        >
-          {{ t('prefs.fontXLarge') }}
-        </button>
-      </div>
-    </div>
-
-    <div class="settings-group">
-      <label class="checkbox">
-        <input type="checkbox" :checked="prefs.highContrast" @change="setHighContrast(!prefs.highContrast)" />
-        {{ t('prefs.highContrast') }}
-      </label>
-    </div>
-
-    <div class="settings-group">
-      <label class="checkbox">
-        <input type="checkbox" :checked="prefs.reducedMotion" @change="setReducedMotion(!prefs.reducedMotion)" />
-        {{ t('prefs.reducedMotion') }}
-      </label>
-    </div>
-
-    <div class="settings-group">
-      <h3>{{ t('prefs.language') }}</h3>
-      <select
-        :value="prefs.language"
-        class="lang-select"
-        :aria-label="t('prefs.language')"
-        @change="onSetLanguage(($event.target as HTMLSelectElement).value)"
-      >
-        <option v-for="lang in languageKeys" :key="lang" :value="lang">
-          {{ languageLabels[lang] }}
-        </option>
-      </select>
-    </div>
-  </aside>
-
-  <main id="main-content" class="app-grid">
-    <p v-if="error" class="error-banner">{{ error }}</p>
-
-    <!-- Loading skeleton -->
-    <template v-if="isLoading && arrivals.length === 0">
-      <section class="card hero-card">
-        <SkeletonLoader variant="stat" :count="3" />
-      </section>
-      <section class="card">
-        <SkeletonLoader variant="row" :count="3" />
-      </section>
-      <section class="card">
-        <SkeletonLoader variant="row" :count="2" />
-      </section>
-    </template>
-
-    <template v-else>
-    <!-- Overview -->
-    <section class="card hero-card" aria-labelledby="overview-title">
-      <div class="card-heading-row">
-        <h2 id="overview-title">{{ t('overview.title') }}</h2>
-        <p class="muted">{{ t('overview.subtitle') }}</p>
-      </div>
-
-      <div class="stats" role="list" :aria-label="t('overview.metrics')">
-        <article role="listitem">
-          <span>{{ t('overview.arrivals') }}</span>
-          <strong>{{ arrivals.length }}</strong>
-        </article>
-        <article role="listitem">
-          <span>{{ t('overview.alerts') }}</span>
-          <strong>
-            {{ alerts.length }}
-            <span v-if="unreadAlertCount > 0" class="unread-badge">{{ unreadAlertCount }} {{ t('alerts.unread') }}</span>
-          </strong>
-        </article>
-        <article role="listitem">
-          <span>{{ t('overview.accessibility') }}</span>
-          <strong>{{ accessibilityIssueCount }}</strong>
-        </article>
-      </div>
-
-      <div v-if="dashboard" class="chip-row" aria-label="Saved preferences">
-        <span v-for="route in dashboard.favoriteRoutes" :key="route" class="chip">Route {{ route }}</span>
-        <span v-for="stop in dashboard.favoriteStops" :key="stop" class="chip muted-chip">Stop {{ stop }}</span>
-      </div>
-
-      <!-- Favorites summary -->
-      <div v-if="favCount > 0" class="chip-row" :aria-label="t('fav.title')">
-        <span v-for="route in favorites.routes" :key="'fav-r-' + route" class="chip fav-chip">&#9733; Route {{ route }}</span>
-        <span v-for="station in favorites.stations" :key="'fav-s-' + station" class="chip fav-chip">&#9733; {{ station }}</span>
-      </div>
-    </section>
-
-    <!-- Arrivals -->
-    <section class="card" aria-labelledby="arrivals-title">
-      <div class="card-heading-row">
-        <div>
-          <h2 id="arrivals-title">{{ t('arrivals.title') }}</h2>
-          <p class="muted">{{ t('arrivals.subtitle') }}</p>
-        </div>
-        <div class="card-actions" v-if="arrivals.length > 0">
-          <button class="btn-small" :aria-label="t('export.json')" @click="exportArrivalsJSON(arrivals)">&#x2913; JSON</button>
-          <button class="btn-small" :aria-label="t('export.csv')" @click="exportArrivalsCSV(arrivals)">&#x2913; CSV</button>
-        </div>
-      </div>
-
-      <div class="inline-controls">
-        <label>
-          {{ t('arrivals.stopId') }}
-          <input v-model="stopId" placeholder="MID" />
-        </label>
-        <button class="btn" @click="loadArrivals()">{{ t('arrivals.load') }}</button>
-      </div>
-
-      <ul class="list modern-list">
-        <li v-for="item in arrivals" :key="item.routeId + '-' + item.destination" class="row-item">
-          <div>
-            <strong>{{ item.routeName }}</strong>
-            <p>{{ item.stopName }} &rarr; {{ item.destination }}</p>
-          </div>
-          <div class="row-meta">
-            <span class="pill">{{ item.minutesAway }} {{ t('arrivals.min') }}</span>
-            <span class="muted">{{ formatTime(item.predictedAt) }}</span>
-            <button
-              class="fav-btn"
-              :aria-label="isRouteBookmarked(item.routeId) ? t('fav.remove') : t('fav.add')"
-              @click="toggleRoute(item.routeId)"
-            >
-              {{ isRouteBookmarked(item.routeId) ? '&#9733;' : '&#9734;' }}
+      <div class="drawer-body">
+        <fieldset class="settings-fieldset">
+          <legend>{{ t('prefs.theme') }}</legend>
+          <div class="seg-control" role="radiogroup" :aria-label="t('prefs.theme')">
+            <button v-for="scheme in (['system', 'light', 'dark'] as const)" :key="scheme"
+              class="seg-btn" :class="{ active: prefs.colorScheme === scheme }"
+              role="radio" :aria-checked="prefs.colorScheme === scheme"
+              @click="setColorScheme(scheme)">
+              {{ t(`prefs.theme${scheme.charAt(0).toUpperCase() + scheme.slice(1)}`) }}
             </button>
           </div>
-        </li>
-        <li v-if="arrivals.length === 0" class="empty-state">{{ t('arrivals.empty') }}</li>
-      </ul>
-    </section>
+        </fieldset>
 
-    <!-- Alerts -->
-    <section class="card" aria-labelledby="alerts-title">
-      <div class="card-heading-row">
-        <div>
-          <h2 id="alerts-title">{{ t('alerts.title') }}</h2>
-          <p class="muted">{{ t('alerts.subtitle') }}</p>
-        </div>
-        <div class="card-actions" v-if="alerts.length > 0">
-          <button class="btn-small" :aria-label="t('export.json')" @click="exportAlertsJSON(alerts)">&#x2913; JSON</button>
-          <button class="btn-small" :aria-label="t('export.csv')" @click="exportAlertsCSV(alerts)">&#x2913; CSV</button>
-        </div>
-      </div>
-
-      <div class="inline-controls">
-        <label>
-          {{ t('alerts.routeFilter') }}
-          <input v-model="routeId" placeholder="RED" />
-        </label>
-        <button class="btn" @click="loadAlerts()">{{ t('alerts.load') }}</button>
-      </div>
-
-      <ul class="list modern-list">
-        <li
-          v-for="alert in alerts"
-          :key="alert.id"
-          class="row-item"
-          :class="{ 'row-item--unread': !isAlertRead(alert.id) }"
-          @click="markAsRead(alert.id)"
-        >
-          <div>
-            <strong>{{ alert.title }}</strong>
-            <span v-if="!isAlertRead(alert.id)" class="new-badge">{{ t('alerts.new') }}</span>
-            <p>{{ alert.description }}</p>
-          </div>
-          <div class="row-meta">
-            <span class="pill">{{ alertSeverityLabel(alert.severity) }}</span>
-            <span class="muted">{{ formatTime(alert.updatedAt) }}</span>
-          </div>
-        </li>
-        <li v-if="alerts.length === 0" class="empty-state">{{ t('alerts.empty') }}</li>
-      </ul>
-    </section>
-
-    <!-- Accessibility -->
-    <section class="card" aria-labelledby="access-title">
-      <div class="card-heading-row">
-        <h2 id="access-title">{{ t('access.title') }}</h2>
-        <p class="muted">{{ t('access.subtitle') }}</p>
-      </div>
-
-      <div class="inline-controls">
-        <label>
-          {{ t('access.stationId') }}
-          <input v-model="stationId" placeholder="MID" />
-        </label>
-        <button class="btn" @click="loadEquipment()">{{ t('access.check') }}</button>
-      </div>
-
-      <ul class="list modern-list">
-        <li v-for="item in equipment" :key="item.stationId + '-' + item.name" class="row-item">
-          <div>
-            <strong>{{ item.stationName }}</strong>
-            <p>{{ item.type }} {{ item.name }}</p>
-          </div>
-          <div class="row-meta">
-            <span class="pill">{{ equipmentStatusLabel(item.status) }}</span>
-            <span class="muted">{{ formatTime(item.updatedAt) }}</span>
-            <button
-              class="fav-btn"
-              :aria-label="isStationBookmarked(item.stationId) ? t('fav.remove') : t('fav.add')"
-              @click="toggleStation(item.stationId)"
-            >
-              {{ isStationBookmarked(item.stationId) ? '&#9733;' : '&#9734;' }}
+        <fieldset class="settings-fieldset">
+          <legend>{{ t('prefs.fontSize') }}</legend>
+          <div class="seg-control" role="radiogroup" :aria-label="t('prefs.fontSize')">
+            <button v-for="fs in (['default', 'large', 'x-large'] as const)" :key="fs"
+              class="seg-btn" :class="{ active: prefs.fontSize === fs }"
+              role="radio" :aria-checked="prefs.fontSize === fs"
+              @click="setFontSize(fs)">
+              {{ t(`prefs.font${fs === 'default' ? 'Default' : fs === 'large' ? 'Large' : 'XLarge'}`) }}
             </button>
           </div>
-        </li>
-        <li v-if="equipment.length === 0" class="empty-state">{{ t('access.empty') }}</li>
-      </ul>
-    </section>
+        </fieldset>
 
-    <!-- Trip Planner -->
-    <section class="card" aria-labelledby="trip-title">
-      <div class="card-heading-row">
-        <h2 id="trip-title">{{ t('trip.title') }}</h2>
-        <p class="muted">{{ t('trip.subtitle') }}</p>
+        <label class="toggle-row">
+          <span>{{ t('prefs.highContrast') }}</span>
+          <input type="checkbox" class="sr-only" :checked="prefs.highContrast" @change="setHighContrast(!prefs.highContrast)" />
+          <span class="toggle-track" :class="{ on: prefs.highContrast }"><span class="toggle-thumb" /></span>
+        </label>
+
+        <label class="toggle-row">
+          <span>{{ t('prefs.reducedMotion') }}</span>
+          <input type="checkbox" class="sr-only" :checked="prefs.reducedMotion" @change="setReducedMotion(!prefs.reducedMotion)" />
+          <span class="toggle-track" :class="{ on: prefs.reducedMotion }"><span class="toggle-thumb" /></span>
+        </label>
+
+        <fieldset class="settings-fieldset">
+          <legend>{{ t('prefs.language') }}</legend>
+          <select
+            :value="prefs.language"
+            class="select"
+            :aria-label="t('prefs.language')"
+            @change="onSetLanguage(($event.target as HTMLSelectElement).value)"
+          >
+            <option v-for="lang in languageKeys" :key="lang" :value="lang">
+              {{ languageLabels[lang] }}
+            </option>
+          </select>
+        </fieldset>
       </div>
+    </aside>
+  </Transition>
+  <Transition name="overlay-fade">
+    <div v-if="settingsOpen" class="drawer-overlay" @click="settingsOpen = false" />
+  </Transition>
 
-      <form class="stack" @submit.prevent="planTrip()">
-        <label>
-          {{ t('trip.from') }}
-          <input v-model="origin" required />
-        </label>
-        <label>
-          {{ t('trip.to') }}
-          <input v-model="destination" required />
-        </label>
-        <label>
-          {{ t('trip.departAt') }}
-          <input type="datetime-local" v-model="departAt" required />
-        </label>
-        <label class="checkbox">
-          <input type="checkbox" v-model="accessibilityNeeded" />
-          {{ t('trip.accessibleOnly') }}
-        </label>
-        <button class="btn" type="submit">{{ t('trip.plan') }}</button>
-      </form>
+  <!-- ═══ Main content ═══ -->
+  <main id="main-content" class="page-wrap">
+    <div class="page-inner">
+      <!-- Error banner -->
+      <Transition name="slide-down">
+        <div v-if="error" class="alert alert--danger" role="alert">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="7.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 5.5v4M9 12.5h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span>{{ error }}</span>
+        </div>
+      </Transition>
 
-      <ul class="list modern-list">
-        <li v-for="trip in tripOptions" :key="trip.id" class="row-item">
-          <div>
-            <strong>{{ trip.summary }}</strong>
-            <p>
-              {{ trip.durationMinutes }} {{ t('arrivals.min') }} &bull;
-              {{ trip.transfers }} {{ t('trip.transfers') }} &bull;
-              {{ t('trip.crowding') }} {{ trip.crowdingForecast }}
+      <!-- Loading skeleton -->
+      <template v-if="isLoading && arrivals.length === 0">
+        <section class="card card--hero">
+          <SkeletonLoader variant="stat" :count="3" />
+        </section>
+        <div class="grid-2">
+          <section class="card"><SkeletonLoader variant="row" :count="3" /></section>
+          <section class="card"><SkeletonLoader variant="row" :count="2" /></section>
+        </div>
+      </template>
+
+      <template v-else>
+        <!-- ── Overview hero ── -->
+        <section class="card card--hero" aria-labelledby="overview-title">
+          <div class="card-header">
+            <div>
+              <h2 id="overview-title" class="card-title">{{ t('overview.title') }}</h2>
+              <p class="card-desc">{{ t('overview.subtitle') }}</p>
+            </div>
+          </div>
+
+          <div class="kpi-row" role="list" :aria-label="t('overview.metrics')">
+            <article class="kpi" role="listitem">
+              <span class="kpi-label">{{ t('overview.arrivals') }}</span>
+              <span class="kpi-value">{{ arrivals.length }}</span>
+            </article>
+            <article class="kpi" role="listitem">
+              <span class="kpi-label">{{ t('overview.alerts') }}</span>
+              <span class="kpi-value">
+                {{ alerts.length }}
+                <span v-if="unreadAlertCount > 0" class="kpi-badge">{{ unreadAlertCount }} {{ t('alerts.unread') }}</span>
+              </span>
+            </article>
+            <article class="kpi" role="listitem">
+              <span class="kpi-label">{{ t('overview.accessibility') }}</span>
+              <span class="kpi-value" :class="{ 'kpi-value--warn': accessibilityIssueCount > 0 }">{{ accessibilityIssueCount }}</span>
+            </article>
+          </div>
+
+          <div v-if="dashboard || favCount > 0" class="chip-row">
+            <template v-if="dashboard">
+              <span v-for="route in dashboard.favoriteRoutes" :key="route" class="chip chip--route">Route {{ route }}</span>
+              <span v-for="stop in dashboard.favoriteStops" :key="stop" class="chip chip--stop">Stop {{ stop }}</span>
+            </template>
+            <template v-if="favCount > 0">
+              <span v-for="route in favorites.routes" :key="'fav-r-' + route" class="chip chip--fav">&#9733; Route {{ route }}</span>
+              <span v-for="station in favorites.stations" :key="'fav-s-' + station" class="chip chip--fav">&#9733; {{ station }}</span>
+            </template>
+          </div>
+        </section>
+
+        <!-- ── Two-column grid: Arrivals + Alerts ── -->
+        <div class="grid-2">
+          <!-- Arrivals -->
+          <section class="card" aria-labelledby="arrivals-title">
+            <div class="card-header">
+              <div>
+                <h2 id="arrivals-title" class="card-title">{{ t('arrivals.title') }}</h2>
+                <p class="card-desc">{{ t('arrivals.subtitle') }}</p>
+              </div>
+              <div class="card-actions" v-if="arrivals.length > 0">
+                <button class="btn btn--ghost btn--sm" :aria-label="t('export.json')" @click="exportArrivalsJSON(arrivals)">JSON</button>
+                <button class="btn btn--ghost btn--sm" :aria-label="t('export.csv')" @click="exportArrivalsCSV(arrivals)">CSV</button>
+              </div>
+            </div>
+
+            <div class="filter-bar">
+              <label class="field">
+                <span class="field-label">{{ t('arrivals.stopId') }}</span>
+                <input v-model="stopId" class="input" placeholder="MID" />
+              </label>
+              <button class="btn btn--secondary" @click="loadArrivals()">{{ t('arrivals.load') }}</button>
+            </div>
+
+            <ul class="data-list">
+              <li v-for="item in arrivals" :key="item.routeId + '-' + item.destination + '-' + item.stopId" class="data-row">
+                <div class="data-row-main">
+                  <strong class="data-row-title">{{ item.routeName }}</strong>
+                  <p class="data-row-sub">{{ item.stopName }} &rarr; {{ item.destination }}</p>
+                </div>
+                <div class="data-row-end">
+                  <span class="pill pill--info">{{ item.minutesAway }} {{ t('arrivals.min') }}</span>
+                  <span class="meta-text">{{ formatTime(item.predictedAt) }}</span>
+                  <button class="icon-btn icon-btn--star" :aria-label="isRouteBookmarked(item.routeId) ? t('fav.remove') : t('fav.add')" @click="toggleRoute(item.routeId)">
+                    {{ isRouteBookmarked(item.routeId) ? '&#9733;' : '&#9734;' }}
+                  </button>
+                </div>
+              </li>
+              <li v-if="arrivals.length === 0" class="empty">{{ t('arrivals.empty') }}</li>
+            </ul>
+          </section>
+
+          <!-- Alerts -->
+          <section class="card" aria-labelledby="alerts-title">
+            <div class="card-header">
+              <div>
+                <h2 id="alerts-title" class="card-title">{{ t('alerts.title') }}</h2>
+                <p class="card-desc">{{ t('alerts.subtitle') }}</p>
+              </div>
+              <div class="card-actions" v-if="alerts.length > 0">
+                <button class="btn btn--ghost btn--sm" :aria-label="t('export.json')" @click="exportAlertsJSON(alerts)">JSON</button>
+                <button class="btn btn--ghost btn--sm" :aria-label="t('export.csv')" @click="exportAlertsCSV(alerts)">CSV</button>
+              </div>
+            </div>
+
+            <div class="filter-bar">
+              <label class="field">
+                <span class="field-label">{{ t('alerts.routeFilter') }}</span>
+                <input v-model="routeId" class="input" placeholder="RED" />
+              </label>
+              <button class="btn btn--secondary" @click="loadAlerts()">{{ t('alerts.load') }}</button>
+            </div>
+
+            <ul class="data-list">
+              <li
+                v-for="alertItem in alerts"
+                :key="alertItem.id"
+                class="data-row"
+                :class="{ 'data-row--unread': !isAlertRead(alertItem.id) }"
+                @click="markAsRead(alertItem.id)"
+              >
+                <div class="data-row-main">
+                  <div class="data-row-title-row">
+                    <strong class="data-row-title">{{ alertItem.title }}</strong>
+                    <span v-if="!isAlertRead(alertItem.id)" class="badge badge--new">{{ t('alerts.new') }}</span>
+                  </div>
+                  <p class="data-row-sub">{{ alertItem.description }}</p>
+                </div>
+                <div class="data-row-end">
+                  <span class="pill" :class="severityClass(alertItem.severity)">{{ alertSeverityLabel(alertItem.severity) }}</span>
+                  <span class="meta-text">{{ formatTime(alertItem.updatedAt) }}</span>
+                </div>
+              </li>
+              <li v-if="alerts.length === 0" class="empty">{{ t('alerts.empty') }}</li>
+            </ul>
+          </section>
+        </div>
+
+        <!-- ── Two-column: Equipment + Trip Planner ── -->
+        <div class="grid-2">
+          <!-- Accessibility / Equipment -->
+          <section class="card" aria-labelledby="access-title">
+            <div class="card-header">
+              <div>
+                <h2 id="access-title" class="card-title">{{ t('access.title') }}</h2>
+                <p class="card-desc">{{ t('access.subtitle') }}</p>
+              </div>
+            </div>
+
+            <div class="filter-bar">
+              <label class="field">
+                <span class="field-label">{{ t('access.stationId') }}</span>
+                <input v-model="stationId" class="input" placeholder="MID" />
+              </label>
+              <button class="btn btn--secondary" @click="loadEquipment()">{{ t('access.check') }}</button>
+            </div>
+
+            <ul class="data-list">
+              <li v-for="item in equipment" :key="item.stationId + '-' + item.name" class="data-row">
+                <div class="data-row-main">
+                  <strong class="data-row-title">{{ item.stationName }}</strong>
+                  <p class="data-row-sub">{{ item.type }} {{ item.name }}</p>
+                </div>
+                <div class="data-row-end">
+                  <span class="pill" :class="item.status === 'operational' ? 'pill--success' : 'pill--danger'">
+                    {{ equipmentStatusLabel(item.status) }}
+                  </span>
+                  <span class="meta-text">{{ formatTime(item.updatedAt) }}</span>
+                  <button class="icon-btn icon-btn--star" :aria-label="isStationBookmarked(item.stationId) ? t('fav.remove') : t('fav.add')" @click="toggleStation(item.stationId)">
+                    {{ isStationBookmarked(item.stationId) ? '&#9733;' : '&#9734;' }}
+                  </button>
+                </div>
+              </li>
+              <li v-if="equipment.length === 0" class="empty">{{ t('access.empty') }}</li>
+            </ul>
+          </section>
+
+          <!-- Trip Planner -->
+          <section class="card" aria-labelledby="trip-title">
+            <div class="card-header">
+              <div>
+                <h2 id="trip-title" class="card-title">{{ t('trip.title') }}</h2>
+                <p class="card-desc">{{ t('trip.subtitle') }}</p>
+              </div>
+            </div>
+
+            <form class="form-stack" @submit.prevent="planTrip()">
+              <div class="form-row-2">
+                <label class="field">
+                  <span class="field-label">{{ t('trip.from') }}</span>
+                  <input v-model="origin" class="input" required />
+                </label>
+                <label class="field">
+                  <span class="field-label">{{ t('trip.to') }}</span>
+                  <input v-model="destination" class="input" required />
+                </label>
+              </div>
+              <label class="field">
+                <span class="field-label">{{ t('trip.departAt') }}</span>
+                <input type="datetime-local" v-model="departAt" class="input" required />
+              </label>
+              <label class="toggle-row toggle-row--compact">
+                <span>{{ t('trip.accessibleOnly') }}</span>
+                <input type="checkbox" class="sr-only" v-model="accessibilityNeeded" />
+                <span class="toggle-track" :class="{ on: accessibilityNeeded }"><span class="toggle-thumb" /></span>
+              </label>
+              <button class="btn btn--primary btn--full" type="submit">{{ t('trip.plan') }}</button>
+            </form>
+
+            <ul class="data-list" v-if="tripOptions.length > 0">
+              <li v-for="trip in tripOptions" :key="trip.id" class="data-row">
+                <div class="data-row-main">
+                  <strong class="data-row-title">{{ trip.summary }}</strong>
+                  <p class="data-row-sub">
+                    {{ trip.durationMinutes }} {{ t('arrivals.min') }}
+                    &bull; {{ trip.transfers }} {{ t('trip.transfers') }}
+                    &bull; {{ t('trip.crowding') }} {{ trip.crowdingForecast }}
+                  </p>
+                </div>
+                <div class="data-row-end">
+                  <span class="pill" :class="riskClass(trip.transferRisk)">{{ tripRiskLabel(trip.transferRisk) }}</span>
+                  <span v-if="trip.accessibilitySafe" class="pill pill--success">{{ t('trip.accessible') }}</span>
+                </div>
+              </li>
+            </ul>
+            <p v-else class="empty">{{ t('trip.empty') }}</p>
+          </section>
+        </div>
+
+        <!-- ── Leave-Now (full width) ── -->
+        <section class="card" aria-labelledby="leave-title">
+          <div class="card-header">
+            <div>
+              <h2 id="leave-title" class="card-title">{{ t('leave.title') }}</h2>
+              <p class="card-desc">{{ t('leave.subtitle') }}</p>
+            </div>
+          </div>
+
+          <form class="filter-bar" @submit.prevent="calculateLeaveNow()">
+            <label class="field">
+              <span class="field-label">{{ t('leave.arriveBy') }}</span>
+              <input type="datetime-local" v-model="arrivalBy" class="input" required />
+            </label>
+            <button class="btn btn--primary" type="submit">{{ t('leave.calculate') }}</button>
+          </form>
+
+          <article v-if="leaveNowResult" class="result-card">
+            <h3 class="result-title">{{ t('leave.recommended') }}</h3>
+            <p class="result-body">
+              {{ t('leave.leaveAt') }}
+              <strong>{{ formatTime(leaveNowResult.leaveAt) }}</strong>
+              &mdash; {{ leaveNowResult.bufferMinutes }} {{ t('leave.buffer') }}
             </p>
-          </div>
-          <div class="row-meta">
-            <span class="pill">{{ tripRiskLabel(trip.transferRisk) }}</span>
-            <span v-if="trip.accessibilitySafe" class="pill">{{ t('trip.accessible') }}</span>
-          </div>
-        </li>
-        <li v-if="tripOptions.length === 0" class="empty-state">{{ t('trip.empty') }}</li>
-      </ul>
-    </section>
-
-    <!-- Leave-Now -->
-    <section class="card" aria-labelledby="leave-title">
-      <div class="card-heading-row">
-        <h2 id="leave-title">{{ t('leave.title') }}</h2>
-        <p class="muted">{{ t('leave.subtitle') }}</p>
-      </div>
-
-      <form class="stack" @submit.prevent="calculateLeaveNow()">
-        <label>
-          {{ t('leave.arriveBy') }}
-          <input type="datetime-local" v-model="arrivalBy" required />
-        </label>
-        <button class="btn" type="submit">{{ t('leave.calculate') }}</button>
-      </form>
-
-      <article v-if="leaveNowResult" class="recommendation">
-        <h3>{{ t('leave.recommended') }}</h3>
-        <p>
-          {{ t('leave.leaveAt') }} <strong>{{ formatTime(leaveNowResult.leaveAt) }}</strong>
-          — {{ leaveNowResult.bufferMinutes }} {{ t('leave.buffer') }}
-        </p>
-        <p class="muted">{{ leaveNowResult.reliabilityNote }}</p>
-      </article>
-      <p v-else class="muted">{{ t('leave.empty') }}</p>
-    </section>
-    </template>
+            <p class="meta-text">{{ leaveNowResult.reliabilityNote }}</p>
+          </article>
+          <p v-else class="meta-text" style="margin-top: var(--rm-space-md)">{{ t('leave.empty') }}</p>
+        </section>
+      </template>
+    </div>
   </main>
 
   <!-- Quick Actions FAB -->
@@ -679,7 +691,10 @@ function toDateTimeLocal(value: Date): string {
 
   <!-- Share toast -->
   <Transition name="toast">
-    <div v-if="linkCopied" class="toast" role="status">{{ t('share.copied') }}</div>
+    <div v-if="linkCopied" class="toast" role="status">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      {{ t('share.copied') }}
+    </div>
   </Transition>
 
   <!-- Keyboard shortcuts help -->
@@ -691,557 +706,511 @@ function toDateTimeLocal(value: Date): string {
 </template>
 
 <style lang="scss" scoped>
+/* ═══════════════════════════════════════════════════════════════
+   Recharge MARTA — Page Styles (Enterprise)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Utility ── */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
 .skip-link {
-  position: absolute;
-  left: -9999px;
-  top: 0;
-}
-
-.skip-link:focus {
-  left: 0.5rem;
-  top: 0.5rem;
-  background: CanvasText;
-  color: Canvas;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.4rem;
-}
-
-.app-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1.25rem 1rem;
-  border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
-  background: color-mix(in srgb, Canvas 96%, CanvasText 4%);
-}
-
-.app-header h1 {
-  margin: 0;
-  font-size: clamp(1.35rem, 2.4vw, 2rem);
-}
-
-.app-header p {
-  margin: 0.35rem 0 0;
-  max-width: 72ch;
-}
-
-.header-copy {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.header-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-top: 0.3rem;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-}
-
-.mock-badge {
-  display: inline-block;
-  margin: 0;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
-  background: color-mix(in srgb, CanvasText 8%, Canvas 92%);
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-
-.live-badge {
-  margin: 0;
-  display: inline-block;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
-  background: color-mix(in srgb, Canvas 86%, CanvasText 14%);
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-
-.app-grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 1rem;
-  padding: 1rem;
-}
-
-.card {
-  grid-column: span 12;
-  padding: 1rem 1rem 1.1rem;
-  border-radius: 0.9rem;
-  border: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
-  background: color-mix(in srgb, Canvas 97%, CanvasText 3%);
-}
-
-.card h2 {
-  margin-top: 0;
-  margin-bottom: 0;
-  font-size: 1.08rem;
-}
-
-.card-heading-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.hero-card {
-  display: grid;
-  gap: 0.9rem;
-}
-
-label,
-input,
-button {
-  font: inherit;
-}
-
-label {
-  display: block;
-  margin-bottom: 0;
-}
-
-.inline-controls {
-  display: grid;
-  gap: 0.6rem;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  margin-bottom: 0.85rem;
-}
-
-input {
-  margin-top: 0.3rem;
-  width: 100%;
-  padding: 0.6rem 0.72rem;
-  border-radius: 0.6rem;
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-  background: Canvas;
-  color: CanvasText;
-}
-
-.stack label {
-  margin-bottom: 0.2rem;
-}
-
-.checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.checkbox input {
-  width: auto;
-  margin: 0;
-}
-
-.btn {
-  padding: 0.62rem 0.9rem;
-  border-radius: 0.6rem;
-  border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
-  background: color-mix(in srgb, CanvasText 10%, Canvas 90%);
-  color: CanvasText;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btn.secondary {
-  background: color-mix(in srgb, CanvasText 16%, Canvas 84%);
-}
-
-.btn:disabled {
-  opacity: 0.65;
-  cursor: wait;
-}
-
-.list {
-  margin: 0;
-  padding-left: 0;
-  list-style: none;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.8rem;
-}
-
-.stats article {
-  border: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
-  border-radius: 0.6rem;
-  padding: 0.72rem;
-  background: color-mix(in srgb, Canvas 90%, CanvasText 10%);
-}
-
-.stats span {
-  display: block;
-  font-size: 0.9rem;
-}
-
-.stats strong {
-  font-size: 1.3rem;
-}
-
-.muted {
-  color: color-mix(in srgb, CanvasText 70%, transparent);
-}
-
-.chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.22rem 0.58rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-  background: color-mix(in srgb, CanvasText 9%, Canvas 91%);
-  font-size: 0.83rem;
-  font-weight: 600;
-}
-
-.muted-chip {
-  background: color-mix(in srgb, CanvasText 5%, Canvas 95%);
-}
-
-.modern-list {
-  display: grid;
-  gap: 0.55rem;
-}
-
-.row-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.9rem;
-  align-items: center;
-  border: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
-  border-radius: 0.68rem;
-  padding: 0.62rem 0.72rem;
-  background: color-mix(in srgb, Canvas 92%, CanvasText 8%);
-}
-
-.row-item p {
-  margin: 0.18rem 0 0;
-  color: color-mix(in srgb, CanvasText 75%, transparent);
-}
-
-.row-meta {
-  display: grid;
-  justify-items: end;
-  gap: 0.2rem;
-  text-align: right;
-}
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.18rem 0.52rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-  background: color-mix(in srgb, CanvasText 11%, Canvas 89%);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.empty-state {
-  border: 1px dashed color-mix(in srgb, CanvasText 25%, transparent);
-  border-radius: 0.6rem;
-  padding: 0.7rem;
-  color: color-mix(in srgb, CanvasText 72%, transparent);
-}
-
-.error-banner {
-  grid-column: span 12;
-  border: 1px solid color-mix(in srgb, CanvasText 35%, transparent);
-  color: CanvasText;
-  background: color-mix(in srgb, CanvasText 12%, Canvas 88%);
-  border-radius: 0.6rem;
-  padding: 0.7rem;
-}
-
-.stack > * + * {
-  margin-top: 0.6rem;
-}
-
-.recommendation {
-  margin-top: 0.8rem;
-  border: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
-  border-radius: 0.75rem;
-  padding: 0.75rem;
-  background: color-mix(in srgb, CanvasText 6%, Canvas 94%);
-}
-
-.recommendation h3 {
-  margin: 0 0 0.45rem;
-  font-size: 0.96rem;
-}
-
-.recommendation p {
-  margin: 0.32rem 0;
-}
-
-@media (min-width: 780px) {
-  .card {
-    grid-column: span 6;
-  }
-
-  .card:first-of-type {
-    grid-column: span 12;
-  }
-
-  .app-header {
-    padding-inline: 1.25rem;
-  }
-
-  .app-grid {
-    padding-inline: 1.25rem;
+  position: absolute; left: -9999px; top: 0; z-index: 999;
+  &:focus {
+    left: var(--rm-space-md); top: var(--rm-space-md);
+    padding: var(--rm-space-sm) var(--rm-space-md);
+    background: var(--rm-primary); color: var(--rm-primary-text);
+    border-radius: var(--rm-radius-md); font-weight: 600;
   }
 }
 
-@media (max-width: 640px) {
-  .header-actions {
-    width: 100%;
-  }
-
-  .header-actions .btn {
-    width: 100%;
-  }
-
-  .app-header {
-    flex-direction: column;
-  }
-
-  .inline-controls {
-    grid-template-columns: 1fr;
-  }
-
-  .row-item {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .row-meta {
-    justify-items: start;
-    text-align: left;
-  }
-
-  .stats {
-    grid-template-columns: 1fr;
-  }
-
-  .settings-panel {
-    width: 100%;
-    border-radius: 0;
-  }
+/* ── Topbar ── */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--rm-bg-surface);
+  border-bottom: 1px solid var(--rm-border-default);
+  box-shadow: var(--rm-shadow-sm);
+  backdrop-filter: blur(12px);
 }
 
-/* ── Settings panel ── */
-
-.icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.4rem;
-  height: 2.4rem;
-  padding: 0;
-  font-size: 1.3rem;
-  border-radius: 50%;
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-  background: color-mix(in srgb, CanvasText 8%, Canvas 92%);
-  color: CanvasText;
-  cursor: pointer;
-  line-height: 1;
+.topbar-inner {
+  display: flex; align-items: center; gap: var(--rm-space-lg);
+  max-width: var(--rm-max-width); margin: 0 auto;
+  padding: var(--rm-space-md) var(--rm-space-xl);
+  height: var(--rm-header-height);
 }
 
-.settings-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: min(360px, 100vw);
-  height: 100vh;
-  overflow-y: auto;
-  z-index: 100;
-  padding: 1rem 1.1rem 1.5rem;
-  border-left: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
-  background: Canvas;
-  box-shadow: -4px 0 24px color-mix(in srgb, CanvasText 10%, transparent);
-}
-
-.settings-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.1rem;
-}
-
-.settings-header h2 {
-  margin: 0;
-  font-size: 1.15rem;
-}
-
-.close-btn {
-  font-size: 1rem;
-  width: 2rem;
-  height: 2rem;
-}
-
-.settings-group {
-  margin-bottom: 1rem;
-  padding-bottom: 0.9rem;
-  border-bottom: 1px solid color-mix(in srgb, CanvasText 10%, transparent);
-}
-
-.settings-group h3 {
-  margin: 0 0 0.45rem;
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: color-mix(in srgb, CanvasText 80%, transparent);
-}
-
-.toggle-group {
-  display: flex;
-  gap: 0;
-  border-radius: 0.6rem;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-}
-
-.toggle-btn {
-  flex: 1;
-  padding: 0.5rem 0.6rem;
-  border: none;
-  border-right: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
-  background: color-mix(in srgb, CanvasText 5%, Canvas 95%);
-  color: CanvasText;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: center;
-}
-
-.toggle-btn:last-child {
-  border-right: none;
-}
-
-.toggle-btn.active {
-  background: color-mix(in srgb, CanvasText 20%, Canvas 80%);
-  font-weight: 700;
-}
-
-.lang-select {
-  width: 100%;
-  padding: 0.55rem 0.7rem;
-  border-radius: 0.6rem;
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-  background: Canvas;
-  color: CanvasText;
-  font: inherit;
-  font-size: 0.92rem;
-  cursor: pointer;
-}
-
-/* ── New feature styles ── */
-
-.card-actions {
-  display: flex;
-  gap: 0.35rem;
+.topbar-brand {
+  display: flex; align-items: center; gap: var(--rm-space-md);
   flex-shrink: 0;
 }
 
-.btn-small {
-  padding: 0.32rem 0.55rem;
-  border-radius: 0.5rem;
-  border: 1px solid color-mix(in srgb, CanvasText 16%, transparent);
-  background: color-mix(in srgb, CanvasText 6%, Canvas 94%);
-  color: CanvasText;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
+.brand-icon { flex-shrink: 0; display: flex; }
+
+.brand-title {
+  font-size: 1.125rem; font-weight: 700; letter-spacing: -0.01em;
+  margin: 0;
 }
 
-.btn-small:hover {
-  background: color-mix(in srgb, CanvasText 14%, Canvas 86%);
+.brand-subtitle {
+  font-size: 0.8rem; color: var(--rm-text-secondary);
+  margin: 0; line-height: 1.2;
 }
 
-.fav-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.3rem;
-  padding: 0;
-  line-height: 1;
-  color: CanvasText;
+.topbar-center { flex: 1; display: flex; justify-content: center; }
+
+.topbar-badges { display: flex; gap: var(--rm-space-sm); }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.2rem 0.6rem; border-radius: var(--rm-radius-full);
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
-.fav-btn:hover {
-  transform: scale(1.15);
+.badge--mock {
+  background: var(--rm-warning-bg); color: var(--rm-warning);
+  border: 1px solid var(--rm-warning);
 }
 
-.fav-chip {
-  background: color-mix(in srgb, CanvasText 8%, Canvas 92%);
-  border-color: color-mix(in srgb, CanvasText 25%, transparent);
+.badge--live {
+  background: var(--rm-success-bg); color: var(--rm-success);
+  border: 1px solid var(--rm-success);
 }
 
-.unread-badge {
-  display: inline-block;
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.1rem 0.4rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, CanvasText 18%, Canvas 82%);
-  vertical-align: middle;
-  margin-left: 0.35rem;
+.badge--new {
+  background: var(--rm-primary); color: var(--rm-primary-text);
+  font-size: 0.65rem; padding: 0.12rem 0.42rem;
 }
 
-.new-badge {
-  display: inline-block;
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0.08rem 0.35rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, CanvasText 30%, transparent);
-  background: color-mix(in srgb, CanvasText 14%, Canvas 86%);
-  margin-left: 0.4rem;
-  vertical-align: middle;
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--rm-success);
+  animation: pulse 2s ease-in-out infinite;
 }
 
-.row-item--unread {
-  border-left: 3px solid color-mix(in srgb, CanvasText 45%, transparent);
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
+.topbar-actions {
+  display: flex; align-items: center; gap: var(--rm-space-sm);
+  flex-shrink: 0;
+}
+
+.topbar-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.25rem; height: 2.25rem;
+  border-radius: var(--rm-radius-md); border: 1px solid var(--rm-border-default);
+  background: var(--rm-bg-surface); color: var(--rm-text-secondary);
+  cursor: pointer; transition: all var(--rm-transition-fast);
+  &:hover { background: var(--rm-bg-inset); color: var(--rm-text-primary); }
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  padding: 0.5rem 1rem; border-radius: var(--rm-radius-md);
+  font-size: 0.85rem; font-weight: 600; font-family: inherit;
+  cursor: pointer; border: 1px solid transparent;
+  transition: all var(--rm-transition-fast);
+  white-space: nowrap; line-height: 1;
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+}
+
+.btn--primary {
+  background: var(--rm-primary); color: var(--rm-primary-text); border-color: var(--rm-primary);
+  &:hover:not(:disabled) { background: var(--rm-primary-hover); }
+  &:focus-visible { box-shadow: var(--rm-shadow-focus); }
+}
+
+.btn--secondary {
+  background: var(--rm-bg-surface); color: var(--rm-text-primary);
+  border-color: var(--rm-border-default);
+  &:hover { background: var(--rm-bg-inset); }
+}
+
+.btn--ghost {
+  background: transparent; color: var(--rm-text-secondary);
+  padding: 0.35rem 0.6rem;
+  &:hover { background: var(--rm-bg-inset); color: var(--rm-text-primary); }
+}
+
+.btn--sm { font-size: 0.75rem; padding: 0.3rem 0.55rem; }
+.btn--full { width: 100%; }
+
+.spin { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Settings Drawer ── */
+.drawer-overlay {
+  position: fixed; inset: 0; z-index: 90;
+  background: var(--rm-bg-overlay);
+  backdrop-filter: blur(4px);
+}
+
+.settings-drawer {
+  position: fixed; top: 0; right: 0; z-index: 100;
+  width: min(400px, 100vw); height: 100dvh;
+  overflow-y: auto;
+  background: var(--rm-bg-surface); border-left: 1px solid var(--rm-border-default);
+  box-shadow: var(--rm-shadow-lg);
+  display: flex; flex-direction: column;
+}
+
+.drawer-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: var(--rm-space-lg) var(--rm-space-xl);
+  border-bottom: 1px solid var(--rm-border-default);
+  h2 { margin: 0; font-size: 1.05rem; font-weight: 700; }
+}
+
+.drawer-body {
+  padding: var(--rm-space-xl);
+  display: flex; flex-direction: column; gap: var(--rm-space-xl);
+}
+
+.settings-fieldset {
+  border: none; padding: 0; margin: 0;
+  legend {
+    font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--rm-text-tertiary);
+    margin-bottom: var(--rm-space-sm);
+  }
+}
+
+.seg-control {
+  display: flex; border-radius: var(--rm-radius-md); overflow: hidden;
+  border: 1px solid var(--rm-border-default);
+}
+
+.seg-btn {
+  flex: 1; padding: 0.5rem 0.65rem; border: none;
+  border-right: 1px solid var(--rm-border-default);
+  background: var(--rm-bg-surface); color: var(--rm-text-secondary);
+  font-size: 0.82rem; font-weight: 500; font-family: inherit;
+  cursor: pointer; text-align: center;
+  transition: all var(--rm-transition-fast);
+  &:last-child { border-right: none; }
+  &.active {
+    background: var(--rm-primary); color: var(--rm-primary-text);
+    font-weight: 600;
+  }
+  &:hover:not(.active) { background: var(--rm-bg-inset); }
+}
+
+.toggle-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: var(--rm-space-sm) 0; gap: var(--rm-space-md); cursor: pointer;
+  font-size: 0.9rem; color: var(--rm-text-primary);
+}
+
+.toggle-row--compact { padding: 0; }
+
+.toggle-track {
+  position: relative; width: 2.5rem; height: 1.4rem;
+  border-radius: var(--rm-radius-full);
+  background: var(--rm-border-strong);
+  transition: background var(--rm-transition-fast);
+  flex-shrink: 0;
+  &.on { background: var(--rm-primary); }
+}
+
+.toggle-thumb {
+  position: absolute; top: 2px; left: 2px;
+  width: calc(1.4rem - 4px); height: calc(1.4rem - 4px);
+  border-radius: 50%; background: white;
+  transition: transform var(--rm-transition-fast);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+  .on > & { transform: translateX(calc(2.5rem - 1.4rem)); }
+}
+
+.select {
+  width: 100%; padding: 0.55rem 0.75rem;
+  border-radius: var(--rm-radius-md); border: 1px solid var(--rm-border-default);
+  background: var(--rm-bg-surface); color: var(--rm-text-primary);
+  font: inherit; font-size: 0.88rem; cursor: pointer;
+  &:focus-visible { outline: 2px solid var(--rm-primary); outline-offset: 2px; }
+}
+
+/* Drawer transitions */
+.drawer-enter-active, .drawer-leave-active { transition: transform var(--rm-transition-slow); }
+.drawer-enter-from, .drawer-leave-to { transform: translateX(100%); }
+.overlay-fade-enter-active, .overlay-fade-leave-active { transition: opacity var(--rm-transition-base); }
+.overlay-fade-enter-from, .overlay-fade-leave-to { opacity: 0; }
+
+/* ── Page layout ── */
+.page-wrap {
+  padding: var(--rm-space-xl) var(--rm-space-xl) var(--rm-space-3xl);
+}
+
+.page-inner {
+  max-width: var(--rm-max-width); margin: 0 auto;
+  display: flex; flex-direction: column; gap: var(--rm-space-xl);
+}
+
+.grid-2 {
+  display: grid; grid-template-columns: 1fr; gap: var(--rm-space-xl);
+  @media (min-width: 860px) { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── Alert banner ── */
+.alert {
+  display: flex; align-items: center; gap: var(--rm-space-md);
+  padding: var(--rm-space-md) var(--rm-space-lg);
+  border-radius: var(--rm-radius-md); font-size: 0.88rem; font-weight: 500;
+}
+
+.alert--danger {
+  background: var(--rm-danger-bg); color: var(--rm-danger);
+  border: 1px solid var(--rm-danger);
+}
+
+.slide-down-enter-active, .slide-down-leave-active { transition: all var(--rm-transition-base); }
+.slide-down-enter-from, .slide-down-leave-to { opacity: 0; transform: translateY(-8px); }
+
+/* ── Cards ── */
+.card {
+  background: var(--rm-bg-surface); border-radius: var(--rm-radius-lg);
+  border: 1px solid var(--rm-border-strong);
+  box-shadow: var(--rm-shadow-md);
+  padding: var(--rm-space-xl);
+  transition: box-shadow var(--rm-transition-fast), border-color var(--rm-transition-fast);
+  &:hover { box-shadow: var(--rm-shadow-lg); border-color: var(--rm-text-tertiary); }
+}
+
+.card--hero {
+  background: linear-gradient(135deg, var(--rm-bg-surface) 60%, var(--rm-accent-bg) 100%);
+  border-color: var(--rm-border-strong);
+}
+
+.card-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: var(--rm-space-md); margin-bottom: var(--rm-space-lg);
+}
+
+.card-title {
+  font-size: 1.05rem; font-weight: 700; margin: 0;
+  letter-spacing: -0.005em;
+}
+
+.card-desc {
+  font-size: 0.82rem; color: var(--rm-text-secondary); margin: 0.15rem 0 0;
+}
+
+.card-actions { display: flex; gap: var(--rm-space-xs); flex-shrink: 0; }
+
+/* ── KPIs ── */
+.kpi-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--rm-space-md);
+}
+
+.kpi {
+  display: flex; flex-direction: column; gap: 0.15rem;
+  background: var(--rm-bg-inset);
+  border-radius: var(--rm-radius-md);
+  padding: var(--rm-space-md) var(--rm-space-lg);
+  border: 1px solid var(--rm-border-default);
+  box-shadow: var(--rm-shadow-sm);
+}
+
+.kpi-label {
+  font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--rm-text-tertiary);
+}
+
+.kpi-value {
+  font-size: 1.65rem; font-weight: 800; letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.kpi-value--warn { color: var(--rm-danger); }
+
+.kpi-badge {
+  display: inline-block; font-size: 0.65rem; font-weight: 700;
+  padding: 0.1rem 0.4rem; border-radius: var(--rm-radius-full);
+  background: var(--rm-primary); color: var(--rm-primary-text);
+  vertical-align: middle; margin-left: 0.35rem;
+}
+
+/* ── Chips ── */
+.chip-row {
+  display: flex; flex-wrap: wrap; gap: var(--rm-space-sm);
+  margin-top: var(--rm-space-sm);
+}
+
+.chip {
+  display: inline-flex; align-items: center;
+  padding: 0.2rem 0.6rem; border-radius: var(--rm-radius-full);
+  font-size: 0.78rem; font-weight: 600;
+  border: 1px solid var(--rm-border-default);
+  background: var(--rm-bg-surface);
+}
+
+.chip--route { border-color: var(--rm-primary); color: var(--rm-primary); background: var(--rm-info-bg); }
+.chip--stop { color: var(--rm-text-secondary); }
+.chip--fav { border-color: var(--rm-accent); color: var(--rm-accent-text); background: var(--rm-accent-bg); }
+
+/* ── Filter bar (input + button) ── */
+.filter-bar {
+  display: flex; gap: var(--rm-space-md); align-items: flex-end;
+  margin-bottom: var(--rm-space-lg);
+}
+
+.filter-bar .field { flex: 1; }
+
+.field { display: flex; flex-direction: column; gap: 0.2rem; }
+
+.field-label {
+  font-size: 0.78rem; font-weight: 600; color: var(--rm-text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+
+.input {
+  width: 100%; padding: 0.55rem 0.75rem;
+  border-radius: var(--rm-radius-md);
+  border: 1px solid var(--rm-border-default);
+  background: var(--rm-bg-surface); color: var(--rm-text-primary);
+  font: inherit; font-size: 0.88rem;
+  transition: border-color var(--rm-transition-fast), box-shadow var(--rm-transition-fast);
+  &:focus { border-color: var(--rm-primary); box-shadow: var(--rm-shadow-focus); outline: none; }
+  &::placeholder { color: var(--rm-text-tertiary); }
+}
+
+/* ── Data list / rows ── */
+.data-list {
+  margin: 0; padding: 0; list-style: none;
+  display: flex; flex-direction: column; gap: var(--rm-space-sm);
+}
+
+.data-row {
+  display: flex; justify-content: space-between; align-items: center; gap: var(--rm-space-lg);
+  padding: var(--rm-space-md) var(--rm-space-lg);
+  border-radius: var(--rm-radius-md); border: 1px solid var(--rm-border-default);
+  background: var(--rm-bg-surface);
+  box-shadow: var(--rm-shadow-sm);
+  transition: border-color var(--rm-transition-fast), background var(--rm-transition-fast), box-shadow var(--rm-transition-fast);
+  &:hover { border-color: var(--rm-border-strong); background: var(--rm-bg-inset); box-shadow: var(--rm-shadow-md); }
+}
+
+.data-row--unread {
+  border-left: 3px solid var(--rm-primary);
+  background: var(--rm-info-bg);
+}
+
+.data-row-main { flex: 1; min-width: 0; }
+
+.data-row-title {
+  font-size: 0.9rem; font-weight: 600; color: var(--rm-text-primary);
+}
+
+.data-row-title-row {
+  display: flex; align-items: center; gap: var(--rm-space-sm);
+}
+
+.data-row-sub {
+  font-size: 0.82rem; color: var(--rm-text-secondary); margin: 0.15rem 0 0;
+  line-height: 1.4;
+}
+
+.data-row-end {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 0.2rem; flex-shrink: 0;
+}
+
+/* ── Pills ── */
+.pill {
+  display: inline-flex; align-items: center;
+  padding: 0.18rem 0.55rem; border-radius: var(--rm-radius-full);
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.01em;
+  border: 1px solid transparent;
+}
+
+.pill--info { background: var(--rm-info-bg); color: var(--rm-info); border-color: var(--rm-info); }
+.pill--success { background: var(--rm-success-bg); color: var(--rm-success); border-color: var(--rm-success); }
+.pill--warning { background: var(--rm-warning-bg); color: var(--rm-warning); border-color: var(--rm-warning); }
+.pill--danger { background: var(--rm-danger-bg); color: var(--rm-danger); border-color: var(--rm-danger); }
+
+.meta-text { font-size: 0.78rem; color: var(--rm-text-tertiary); }
+
+.icon-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 1.2rem; padding: 0; line-height: 1;
+  color: var(--rm-text-tertiary);
+  transition: color var(--rm-transition-fast), transform var(--rm-transition-fast);
+  &:hover { color: var(--rm-accent); transform: scale(1.15); }
+}
+
+.icon-btn--star { font-size: 1.25rem; }
+
+.empty {
+  text-align: center; padding: var(--rm-space-xl);
+  border: 1px dashed var(--rm-border-strong);
+  border-radius: var(--rm-radius-md);
+  color: var(--rm-text-tertiary); font-size: 0.88rem;
+}
+
+/* ── Form stack ── */
+.form-stack {
+  display: flex; flex-direction: column; gap: var(--rm-space-md);
+  margin-bottom: var(--rm-space-lg);
+}
+
+.form-row-2 {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--rm-space-md);
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+}
+
+/* ── Result card ── */
+.result-card {
+  margin-top: var(--rm-space-lg);
+  padding: var(--rm-space-lg);
+  border-radius: var(--rm-radius-md);
+  background: var(--rm-success-bg);
+  border: 1px solid var(--rm-success);
+}
+
+.result-title {
+  font-size: 0.88rem; font-weight: 700; margin: 0 0 var(--rm-space-sm);
+  color: var(--rm-success);
+}
+
+.result-body { margin: 0; font-size: 0.9rem; }
+
+/* ── Toast ── */
 .toast {
-  position: fixed;
-  bottom: 5.5rem;
-  right: 1.5rem;
-  z-index: 95;
-  padding: 0.55rem 1rem;
-  border-radius: 0.6rem;
-  background: color-mix(in srgb, CanvasText 90%, Canvas 10%);
-  color: Canvas;
-  font-size: 0.85rem;
-  font-weight: 600;
-  box-shadow: 0 2px 12px color-mix(in srgb, CanvasText 20%, transparent);
+  position: fixed; bottom: 5.5rem; right: 1.5rem; z-index: 95;
+  display: flex; align-items: center; gap: var(--rm-space-sm);
+  padding: var(--rm-space-md) var(--rm-space-lg);
+  border-radius: var(--rm-radius-md);
+  background: var(--rm-text-primary); color: var(--rm-text-inverse);
+  font-size: 0.85rem; font-weight: 600;
+  box-shadow: var(--rm-shadow-lg);
 }
 
-.toast-enter-active,
-.toast-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.toast-enter-active, .toast-leave-active {
+  transition: opacity var(--rm-transition-base), transform var(--rm-transition-base);
+}
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(8px); }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .topbar-inner { padding: var(--rm-space-md); gap: var(--rm-space-sm); }
+  .topbar-center { display: none; }
+  .brand-subtitle { display: none; }
+  .page-wrap { padding: var(--rm-space-md) var(--rm-space-md) var(--rm-space-2xl); }
+  .card { padding: var(--rm-space-lg); }
+  .kpi-row { grid-template-columns: 1fr; }
+  .data-row { flex-direction: column; align-items: flex-start; gap: var(--rm-space-md); }
+  .data-row-end { flex-direction: row; flex-wrap: wrap; gap: var(--rm-space-sm); }
+  .filter-bar { flex-direction: column; }
+  .settings-drawer { width: 100%; }
 }
 
-.toast-enter-from,
-.toast-leave-to {
-  opacity: 0;
-  transform: translateY(8px);
+@media (min-width: 1200px) {
+  .page-wrap { padding: var(--rm-space-2xl) var(--rm-space-3xl) var(--rm-space-3xl); }
 }
 </style>
