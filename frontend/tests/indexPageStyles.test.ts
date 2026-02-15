@@ -26,4 +26,18 @@ describe("index page style accessibility rules", () => {
     expect(tabletBlock).toContain(tabletMedia);
     expect(tabletBlock).toMatch(/\.data-row-end\s*\{[^}]*align-items:\s*flex-start/);
   });
+
+  it("adds an actionable retry button in error banner", () => {
+    expect(pageContent).toContain('class="alert-text"');
+    expect(pageContent).toContain('@click="retryFromError()"');
+  });
+
+  it("keeps skip-link before main content for keyboard users", () => {
+    const skipLinkIndex = pageContent.indexOf('href="#main-content"');
+    const mainIndex = pageContent.indexOf('<main id="main-content"');
+
+    expect(skipLinkIndex).toBeGreaterThanOrEqual(0);
+    expect(mainIndex).toBeGreaterThanOrEqual(0);
+    expect(skipLinkIndex).toBeLessThan(mainIndex);
+  });
 });

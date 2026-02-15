@@ -55,10 +55,12 @@ function action(fn: () => void) {
 
 <style scoped>
 .fab-container {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  z-index: 90;
+  position: sticky;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  margin-left: auto;
+  margin-right: max(1rem, env(safe-area-inset-right, 0px));
+  width: fit-content;
+  z-index: 40;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -83,6 +85,11 @@ function action(fn: () => void) {
 
 .fab-trigger:hover {
   background: var(--rm-primary-hover);
+}
+
+.fab-trigger:focus-visible {
+  outline: 2px solid var(--rm-primary);
+  outline-offset: 2px;
 }
 
 .fab-trigger.open {
@@ -115,6 +122,11 @@ function action(fn: () => void) {
   transform: scale(1.04);
 }
 
+.fab-action:focus-visible {
+  outline: 2px solid var(--rm-primary);
+  outline-offset: 2px;
+}
+
 /* transition */
 .fab-menu-enter-active,
 .fab-menu-leave-active {
@@ -125,5 +137,20 @@ function action(fn: () => void) {
 .fab-menu-leave-to {
   opacity: 0;
   transform: translateY(10px);
+}
+
+@media (max-width: 640px) {
+  .fab-container {
+    position: fixed;
+    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
+    margin-right: 0;
+  }
+
+  .fab-trigger {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.25rem;
+  }
 }
 </style>
