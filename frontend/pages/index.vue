@@ -895,6 +895,7 @@ function toDateTimeLocal(value: Date): string {
   cursor: pointer; text-align: center;
   transition: all var(--rm-transition-fast);
   &:last-child { border-right: none; }
+  &:focus-visible { outline: 2px solid var(--rm-primary); outline-offset: -2px; }
   &.active {
     background: var(--rm-primary); color: var(--rm-primary-text);
     font-weight: 600;
@@ -1137,7 +1138,9 @@ function toDateTimeLocal(value: Date): string {
 .meta-text { font-size: 0.78rem; color: var(--rm-text-tertiary); }
 
 .icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
   background: none; border: none; cursor: pointer;
+  min-width: 2.75rem; min-height: 2.75rem;
   font-size: 1.2rem; padding: 0; line-height: 1;
   color: var(--rm-text-tertiary);
   transition: color var(--rm-transition-fast), transform var(--rm-transition-fast);
@@ -1208,6 +1211,10 @@ function toDateTimeLocal(value: Date): string {
   .data-row-end { flex-direction: row; flex-wrap: wrap; gap: var(--rm-space-sm); }
   .filter-bar { flex-direction: column; }
   .settings-drawer { width: 100%; }
+}
+
+@media (max-width: 860px) and (min-width: 641px) {
+  .data-row-end { align-items: flex-start; }
 }
 
 @media (min-width: 1200px) {
