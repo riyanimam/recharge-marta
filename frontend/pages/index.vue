@@ -265,6 +265,10 @@ function shareLink() {
   setTimeout(() => { linkCopied.value = false; }, 2000);
 }
 
+function handleRetry() {
+  refreshAll();
+}
+
 // ── Quick-action wrappers ──
 
 function onQuickExportJson() {
@@ -416,7 +420,8 @@ function toDateTimeLocal(value: Date): string {
       <Transition name="slide-down">
         <div v-if="error" class="alert alert--danger" role="alert">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="7.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 5.5v4M9 12.5h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <span>{{ error }}</span>
+          <span class="alert-text">{{ error }}</span>
+          <button class="btn btn--secondary btn--sm" @click="handleRetry()">{{ t('app.refresh') }}</button>
         </div>
       </Transition>
 
@@ -675,7 +680,7 @@ function toDateTimeLocal(value: Date): string {
             </p>
             <p class="meta-text">{{ leaveNowResult.reliabilityNote }}</p>
           </article>
-          <p v-else class="meta-text" style="margin-top: var(--rm-space-md)">{{ t('leave.empty') }}</p>
+          <p v-else class="meta-text leave-empty">{{ t('leave.empty') }}</p>
         </section>
       </template>
     </div>
@@ -895,6 +900,7 @@ function toDateTimeLocal(value: Date): string {
   cursor: pointer; text-align: center;
   transition: all var(--rm-transition-fast);
   &:last-child { border-right: none; }
+  &:focus-visible { outline: 2px solid var(--rm-primary); outline-offset: -2px; }
   &.active {
     background: var(--rm-primary); color: var(--rm-primary-text);
     font-weight: 600;
@@ -963,6 +969,8 @@ function toDateTimeLocal(value: Date): string {
   padding: var(--rm-space-md) var(--rm-space-lg);
   border-radius: var(--rm-radius-md); font-size: 0.88rem; font-weight: 500;
 }
+
+.alert-text { flex: 1; }
 
 .alert--danger {
   background: var(--rm-danger-bg); color: var(--rm-danger);
@@ -1137,7 +1145,9 @@ function toDateTimeLocal(value: Date): string {
 .meta-text { font-size: 0.78rem; color: var(--rm-text-tertiary); }
 
 .icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
   background: none; border: none; cursor: pointer;
+  min-width: 2.75rem; min-height: 2.75rem;
   font-size: 1.2rem; padding: 0; line-height: 1;
   color: var(--rm-text-tertiary);
   transition: color var(--rm-transition-fast), transform var(--rm-transition-fast);
@@ -1179,6 +1189,7 @@ function toDateTimeLocal(value: Date): string {
 }
 
 .result-body { margin: 0; font-size: 0.9rem; }
+.leave-empty { margin-top: var(--rm-space-md); }
 
 /* ── Toast ── */
 .toast {
@@ -1208,6 +1219,10 @@ function toDateTimeLocal(value: Date): string {
   .data-row-end { flex-direction: row; flex-wrap: wrap; gap: var(--rm-space-sm); }
   .filter-bar { flex-direction: column; }
   .settings-drawer { width: 100%; }
+}
+
+@media (max-width: 860px) and (min-width: 641px) {
+  .data-row-end { align-items: flex-start; }
 }
 
 @media (min-width: 1200px) {
